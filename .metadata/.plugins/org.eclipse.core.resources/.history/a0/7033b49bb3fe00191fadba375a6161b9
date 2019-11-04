@@ -1,0 +1,178 @@
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.stream.*;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+import org.json.simple.JSONArray;
+import org.json.JSONException;
+import java.util.*;
+import java.util.Optional;
+import java.io.*;
+
+import static java.util.stream.Collectors.*;
+
+public class Main {
+	 public static void main(String args[]) {
+		 
+		  	Scanner fileIn = null;
+		  	String keyword_0 = "";
+		  	int n = 0;
+
+	        try {
+	            Scanner keyboard = new Scanner(System.in);
+	            System.out.println("Enter the value of n: ");
+	            n = keyboard.nextInt();
+	            System.out.println("Enter the keyword: ");
+	            keyword_0 = keyboard.next();
+
+
+	        } catch (InputMismatchException e) {
+	            System.out.println("Invalid input.");
+	        }
+	        
+	        String keyword = keyword_0;
+		 
+	        JSONParser parser = new JSONParser();
+		 
+			String fileName = "sample_10000.txt";
+	
+			try (Stream<String> stream = Files.lines(Paths.get(fileName))) {
+				Stream<JSONObject> orgJSonStream = stream.map(line -> {
+			    	 try {
+						 JSONObject json = (JSONObject) parser.parse(line);
+						 return json;
+					 } catch (ParseException $e) {
+						 System.out.println(line);
+						 throw new RuntimeException($e);
+					 }
+			    });
+
+				Stream<JSONObject> jSonStream  = orgJSonStream.map(obj -> {
+					String title = (String)obj.get("title");
+					if (title.toLowerCase().contains(keyword.toLowerCase())) {
+						obj.put("contains Keyword", "yes");
+						obj.put("forCompute", 1);
+						obj.put("number of Cited", 0);
+					}
+					return obj;
+				});
+				
+				
+				for (int i = 0; i < n; i++) {
+//					System.out.println("test");
+					//Spread references with main object to arr
+					jSonStream = jSonStream.map(item -> {
+						return spreadArray(item);
+					})
+					//Flat map the whole thing giant array
+					.flatMap(JSONArray::stream);
+					
+					
+					//Merge duplicate
+					List<JSONObject> jsonList = jSonStream.collect(Collectors.collectingAndThen(
+							Collectors.groupingBy(item -> ((JSONObject) item).get("id"),
+								Collectors.collectingAndThen(
+									Collectors.reducing((item1, item2) -> {
+										return combine(item1, item2);
+									}), Optional::get
+								))
+							, m -> new ArrayList<>(m.values())
+						));
+					
+					jSonStream = jsonList.stream();
+				}
+				
+				jSonStream = jSonStream.filter(item -> {
+					return item.containsKey("number of Cited");
+				})
+					.sequential().sorted((Comparator.comparing(item -> {
+					return (int)((JSONObject)item).get("number of Cited");
+				}).reversed()));
+				
+				
+				try {
+					PrintWriter outputStream = new PrintWriter(new FileOutputStream("output.txt"));
+					jSonStream.forEach(obj -> {
+						outputStream.println(obj.get("id") +": Number of times cited " + obj.get("number of Cited") + "; Title contains keyword: " + obj.get("contains Keyword"));
+					});
+					outputStream.close();
+				} 
+				catch (FileNotFoundException e) {
+					System.out.println("Error opening the file output.txt");
+					System.exit(0);
+					
+				}
+	
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	        }
+		 
+	 }
+					
+	 
+	 public static JSONObject combine(JSONObject item1, JSONObject item2) {
+		 int cited = item1.containsKey("number of Cited") ? (int)item1.get("number of Cited") : 0;
+			cited += item2.containsKey("number of Cited") ? (int)item2.get("number of Cited") : 0;
+			
+			boolean forCompute = item1.containsKey("forCompute");
+			forCompute = forCompute ? forCompute : item2.containsKey("forCompute");
+			
+			if (item1.containsKey("title")) {
+				item1.put("number of Cited", cited);
+				if (forCompute)
+					item1.put("forCompute", 1);
+				return item1;
+			} else {
+				item2.put("number of Cited", cited);
+				if (forCompute)
+					item2.put("forCompute", 1);
+				return item2;
+			}
+	 }
+	 
+	 public static JSONArray spreadArray(JSONObject item) {
+		JSONArray arr = new JSONArray();
+			
+		if (item.containsKey("forCompute")) {
+			JSONArray references = (JSONArray)item.get("references");
+			if (references == null)
+				references = new JSONArray();
+			
+			for (int i = 0; i < references.size(); i++) {
+				JSONObject obj = new JSONObject();
+				obj.put("id", references.get(i));
+				obj.put("number of Cited", 1);
+				obj.put("forCompute", 1);
+				arr.add(obj);
+			}
+			
+			item.remove("forCompute");
+		}
+		
+		arr.add(item);
+		return arr;
+	 }
+	 
+	 public static JSONArray concatArray(JSONArray arr1, JSONArray arr2) throws JSONException {
+		    JSONArray result = new JSONArray();
+		    for (int i = 0; i < arr1.size(); i++) {
+		        result.add(arr1.get(i));
+		    }
+		    for (int i = 0; i < arr2.size(); i++) {
+		        result.add(arr2.get(i));
+		    }
+		    return result;
+		}
+}
+
+
+	        
+	 

@@ -1,0 +1,23 @@
+Keyword: computer
+n = 2
+100027507: Number of times cited 3; Title contains keyword: null
+100023113: Number of times cited 1; Title contains keyword: null
+100001334: Number of times cited 1; Title contains keyword: yes
+100034732: Number of times cited 1; Title contains keyword: null
+100019058: Number of times cited 1; Title contains keyword: null
+100009080: Number of times cited 1; Title contains keyword: null
+100008278: Number of times cited 1; Title contains keyword: null
+100013628: Number of times cited 1; Title contains keyword: null
+1000298444: Number of times cited 1; Title contains keyword: null
+100035078: Number of times cited 1; Title contains keyword: null
+100032170: Number of times cited 1; Title contains keyword: null
+100036498: Number of times cited 1; Title contains keyword: null
+1000018889: Number of times cited 1; Title contains keyword: null
+100008490: Number of times cited 1; Title contains keyword: null
+100021726: Number of times cited 0; Title contains keyword: yes
+1000022707: Number of times cited 0; Title contains keyword: yes
+100031634: Number of times cited 0; Title contains keyword: yes
+100024814: Number of times cited 0; Title contains keyword: yes
+100007563: Number of times cited 0; Title contains keyword: yes
+1000153461: Number of times cited 0; Title contains keyword: yes
+1000290224: Number of times cited 0; Title contains keyword: yes

@@ -1,0 +1,199 @@
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.stream.*;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+import org.json.simple.JSONArray;
+import org.json.JSONException;
+import java.util.*;
+import java.util.Optional;
+
+import static java.util.stream.Collectors.*;
+
+
+public class Main {
+	 public static void main(String args[]) {
+		 
+		 JSONParser parser = new JSONParser();
+		 
+		 
+//		 try {
+//			 JSONObject json = (JSONObject) parser.parse("{\"phonetype\":\"N95\",\"cat\":\"WP\",\"ref\":[1,2]}");
+////			 System.out.println(json.get("phonetype"));
+////			 String title = (String)json.get("ref");
+////			 if (title.contains("N95")) {
+////					String key = "contains keywords";
+////					String value = "true";
+////					json.put(key, value);
+////			 }
+//			 
+//			JSONArray references = (JSONArray)json.get("ref");
+//			for (int i = 0; i < references.size(); i++) {
+////				String t = (String)references.get(i);
+//				System.out.println(references.get(i));
+//			}
+////			 System.out.println(json);
+//		 } catch (ParseException $e) {
+//		 }
+		 
+		 
+//		 String test = "artificial intelligence in education";
+//		 System.out.print(test.contains("artificial"));
+		 
+		 String keyword = "Improvement";
+		 
+			String fileName = "5_sample_1200.txt";
+	
+			try (Stream<String> stream = Files.lines(Paths.get(fileName))) {
+				Stream<JSONObject> orgJSonStream = stream.map(line -> {
+			    	 try {
+						 JSONObject json = (JSONObject) parser.parse(line);
+						 return json;
+					 } catch (ParseException $e) {
+						 throw new RuntimeException($e);
+					 }
+			    });
+	
+//				jSonStream.map(obj -> {
+//					return (String)obj.get("title");
+//				}).forEach(System.out::println);
+//				jSonStream.forEach(System.out::println);
+				
+				Stream<JSONObject> jSonStream  = orgJSonStream.map(obj -> {
+					String title = (String)obj.get("title");
+					if (title.contains(keyword)) {
+						String key = "contains keywords";
+						String value = "true";
+						obj.put(key, value);
+					}
+					return obj;
+				})
+				//Spread references with main object to arr
+				.map(item -> {
+					JSONArray arr = new JSONArray();
+					arr.add(item);
+					
+					JSONArray references = (JSONArray)item.get("references");
+					if (references == null)
+						return arr;
+					
+					for (int i = 0; i < references.size(); i++) {
+						JSONObject obj = new JSONObject();
+						obj.put("id", references.get(i));
+						obj.put("cited", 1);
+						arr.add(obj);
+        			}
+
+//					return item.get("references");
+					return arr;
+				})
+				//Flat map the whole thing giant array
+				.flatMap(JSONArray::stream);
+				
+				
+				//Merge duplicate
+				List<JSONObject> jsonList = jSonStream.collect(Collectors.collectingAndThen(
+						Collectors.groupingBy(item -> ((JSONObject) item).get("id"),
+							Collectors.collectingAndThen(
+								Collectors.reducing((item1, item2) -> {
+									int cited = item1.containsKey("cited") ? (int)item1.get("cited") : 0;
+									cited += item2.containsKey("cited") ? (int)item1.get("cited") : 0;
+									
+									if (item1.containsKey("title")) {
+										item1.put("cited", cited);
+										return item1;
+									} else {
+										item2.put("cited", cited);
+										return item2;
+									}
+								}), Optional::get
+							))
+						, m -> new ArrayList<>(m.values())
+					));
+				
+				jsonList.stream().forEach(System.out::println);
+//				.collect(Collectors.collectingAndThen(
+//					Collectors.groupingBy(item -> ((JSONObject) item).get("id"),
+//						Collectors.collectingAndThen(
+//							Collectors.reducing((item1, item2) -> {
+//								return item1;
+//							}), Optional::get
+//						))
+//					, m -> new ArrayList<>(m.values())
+//				));
+				
+				
+				
+				
+				
+//				        .forEach(System.out::println);
+//				        .map(obj -> {
+//				        	JSONArray allReferences = null;
+//				        	ArrayList<String> referenceNum = new ArrayList<String>();
+//				        	String ck = (String)obj.get("contains keywords");
+//				        	if (obj.get("contains keywords") != null) {
+//				        		JSONArray references = (JSONArray)obj.get("references");
+//				        		if (allReferences == null) {
+//				        			allReferences = references;
+//				        		} 
+//				        		else {
+//				        			for (int i = 0; i < references.size(); i++) {
+//					        			  allReferences = concatArray(references, allReferences);
+//					        			}
+//				        		}
+//				        		
+//				        		
+//				        		
+//				   	
+//				        	}
+//				        	return allReferences;
+//				        })
+//				        .forEach(System.out::println);
+//				
+//	        	jSonStream.filter(obj -> ((String)obj.get("title")).contains(keyword))
+//	        		      .map(obj -> obj.get("references"))
+//	        		      .
+//	        		      .map(obj -> {
+//	        		    	  ArrayList<String> referenceNum = new ArrayList<String>();
+//	        		    	  ArrayList<String> references = (ArrayList<String>) obj;
+//	        		    	  for (int i = 0; i < references.size(); i++) {
+//	        		    		  referenceNum.add(references.get(i))
+//	        		    	  }
+//	        		      })
+//	        	          .forEach(System.out::println);
+	        	
+
+
+	        	
+	        	
+	           
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	        }
+	 }
+	 
+	 
+	 
+	 public static JSONArray concatArray(JSONArray arr1, JSONArray arr2) throws JSONException {
+		    JSONArray result = new JSONArray();
+		    for (int i = 0; i < arr1.size(); i++) {
+		        result.add(arr1.get(i));
+		    }
+		    for (int i = 0; i < arr2.size(); i++) {
+		        result.add(arr2.get(i));
+		    }
+		    return result;
+		}
+}
+
+
+	        
+	 
